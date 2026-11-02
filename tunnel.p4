@@ -62,11 +62,19 @@ parser MyParser(packet_in packet,
         transition select(hdr.ethernet.etherType) {
             TYPE_IPV4: parse_ipv4;
             // TODO (Step 4): send TYPE_MYTUNNEL packets to a parse_myTunnel state
+            TYPE_MYTUNNEL: parse_myTunnel;
             default: accept;
         }
     }
 
     // TODO (Step 4): add the parse_myTunnel state here
+    state parse_myTunnel{
+        packet.extract(hdr.myTunnel); // Marks my tunnel header as valid. Important!
+        transition select(hdr.myTunnel.proto_id) { // check proto_id for "next header"
+            TYPE_IPV4: parse_ipv4;
+            default: accept;
+        }
+    }
 
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
@@ -107,7 +115,7 @@ control MyIngress(inout headers hdr,
     }
 
     table myTunnel_exact {
-        key = { hdr.myTunnel.dst_id: exact; }
+        key = { hdr.myTunnel.dst_id: exact; } // This means that each destination IP address must match the key exactly
         actions = { myTunnel_forward; drop; }
         size = 1024;
         default_action = drop();
@@ -115,7 +123,9 @@ control MyIngress(inout headers hdr,
 
     apply {
         // TODO (Step 5): tunnelled packets should use myTunnel_exact instead
-        if (hdr.ipv4.isValid()) {
+        if(hdr.myTunnel.isValid()){ // If parser matched this header
+            myTunnel_exact.apply(); // Apply this table
+        } else if (hdr.ipv4.isValid()) {
             ipv4_lpm.apply();
         } else {
             drop();
@@ -152,6 +162,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         // TODO (Step 4): emit the tunnel header (only valid headers are written)
+        packet.emit(hdr.myTunnel); // The tunnel automatically checks for if myTunnel header exists.
         packet.emit(hdr.ipv4);
     }
 }
