@@ -25,6 +25,7 @@ header ethernet_t {
 header myTunnel_t {
     bit<16> proto_id;   // what follows the tunnel header, like etherType (0x0800: IPv4)
     bit<16> dst_id;     // which tunnel exit to deliver to: 1 = h1, 2 = h2, 3 = h3
+    bit <8> ttl;
 }
 
 header ipv4_t {
@@ -76,6 +77,7 @@ parser MyParser(packet_in packet,
         }
     }
 
+
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
         transition accept;
@@ -111,7 +113,14 @@ control MyIngress(inout headers hdr,
     }
 
     action myTunnel_forward(egressSpec_t port) {
-        standard_metadata.egress_spec = port;
+        if (hdr.myTunnel.ttl > 0){ // Check if timeout reached
+            standard_metadata.egress_spec = port;
+            hdr.myTunnel.ttl = hdr.myTunnel.ttl - 1;
+        }else{
+            mark_to_drop(standard_metadata);
+        }
+        // standard_metadata.egress_spec = port;
+        
     }
 
     table myTunnel_exact {
