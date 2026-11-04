@@ -1,3 +1,4 @@
+# No Loop
 mininet
 ```
 mininet> h3 python3 receive.py &
@@ -98,4 +99,46 @@ listening on h2-eth0, link-type EN10MB (Ethernet), snapshot length 262144 bytes
 1 packet captured
 1 packet received by filter
 0 packets dropped by kernel
+```
+
+# With Loop
+```
+mininet> h1 python3 send.py 10.88.0.3 "loop" --tunnel 3
+###[ Ethernet ]### 
+  dst       = ff:ff:ff:ff:ff:ff
+  src       = 00:00:00:00:00:01
+  type      = 0x1212
+###[ MyTunnel ]### 
+     proto_id  = 2048
+     dst_id    = 3
+     ttl       = 64
+###[ IP ]### 
+        version   = 4
+        ihl       = 5
+        tos       = 0x0
+        len       = 32
+        id        = 1
+        flags     = 
+        frag      = 0
+        ttl       = 64
+        proto     = udp
+        chksum    = 0x6619
+        src       = 10.88.0.1
+        dst       = 10.88.0.3
+        \options   \
+###[ UDP ]### 
+           sport     = 4321
+           dport     = 4321
+           len       = 12
+           chksum    = 0xed80
+###[ Raw ]### 
+              load      = 'loop'
+
+Sent from h1-eth0.
+mininet> sh grep -c "Processing packet received" logs/s1.txt logs/s2.txt
+logs/s1.txt:65
+logs/s2.txt:64
+mininet> sh sleep 5; grep -c "Processing packet received" logs/s1.txt logs/s2.txt
+logs/s1.txt:65
+logs/s2.txt:64
 ```

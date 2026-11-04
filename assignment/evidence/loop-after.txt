@@ -36,3 +36,6 @@ Sent from h1-eth0.
 mininet> sh grep -c "Processing packet received" logs/s1.txt logs/s2.txt
 logs/s1.txt:33
 logs/s2.txt:33
+mininet> sh sleep 5; sh grep -c "Processing packet received" logs/s1.txt logs/s2.txt
+logs/s1.txt:33
+logs/s2.txt:33
